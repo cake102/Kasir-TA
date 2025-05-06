@@ -6,9 +6,9 @@ export default function Home() {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    setHasMounted(true); // Hindari SSR hydration error
+    setHasMounted(true);
 
-    const currentUser = localStorage.getItem("currentUser"); // Menggunakan localStorage
+    const currentUser = localStorage.getItem("currentUser");
 
     if (!currentUser) {
       router.replace("/login");
@@ -24,7 +24,7 @@ export default function Home() {
       } else {
         router.replace("/login");
       }
-    } catch (_) { // Mengganti `e` dengan `_` untuk menunjukkan parameter tidak digunakan
+    } catch {
       router.replace("/login");
     }
   }, [router]);

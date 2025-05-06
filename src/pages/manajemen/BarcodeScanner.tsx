@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { FaTimes } from "react-icons/fa";
 
 interface BarcodeScannerProps {
@@ -37,15 +37,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   useEffect(() => {
     if (!scannerRef.current || !kameraTerpilih || !isScanning) return;
 
-    const qrCodeScanner = new Html5Qrcode("scanner-container");
+    const qrCodeScanner = new Html5Qrcode("scanner-container", {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.UPC_A
+      ]
+    });
 
     qrCodeScanner
       .start(
         kameraTerpilih,
         {
           fps: 15,
-          qrbox: { width: 250, height: 200 },
-          formatsToSupport: ["EAN_13", "UPC_A", "CODE_128"]
+          qrbox: { width: 250, height: 200 }
         },
         (decodedText) => {
           if (decodedText === lastScannedCodeRef.current) return;
@@ -59,12 +64,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       )
       .catch(() => alert("Gagal memulai scanner. Coba ganti kamera."));
 
-      return () => {
-        // Tidak boleh async, jadi kita jalankan promise-nya tanpa return
-        qrCodeScanner.stop()
-          .then(() => console.log("Scanner stopped"))
-          .catch(console.error);
-      };
+    // Cleanup harus sinkron
+    return () => {
+      qrCodeScanner.stop().then(() => {
+        qrCodeScanner.clear();
+      }).catch(console.error);
+    };
   }, [kameraTerpilih, isScanning, stableOnScan]);
 
   useEffect(() => {

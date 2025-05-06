@@ -11,20 +11,40 @@ const Transaksi = () => {
   const [barangTersedia, setBarangTersedia] = useState<any[]>([]);
   const [kategoriList, setKategoriList] = useState<string[]>([]);
   const [selectedKategori, setSelectedKategori] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [showAllKategori, setShowAllKategori] = useState(false); // ✅ tambahan
 
-  useEffect(() => {
+  const loadBarangData = () => {
     const savedBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
     setBarangTersedia(savedBarang);
 
     const savedKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
     setKategoriList(savedKategori);
+  };
+
+  useEffect(() => {
+    loadBarangData();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadBarangData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  const filteredBarang = selectedKategori
-    ? barangTersedia.filter((barang) => barang.kategori === selectedKategori && barang.stok > 0)
-    : barangTersedia.filter((barang) => barang.stok > 0);
+  const filteredBarang = barangTersedia.filter((barang) => {
+    const cocokKategori = selectedKategori ? barang.kategori === selectedKategori : true;
+    const keyword = searchKeyword.toLowerCase();
+    const cocokKeyword =
+    (barang.nama || "").toLowerCase().includes(keyword) ||
+    (String(barang.kode) || "").toLowerCase().includes(keyword);
+    return cocokKategori && cocokKeyword && barang.stok > 0;
+  });
 
   const tambahBarang = (barang: any) => {
     setSelectedItems((prevItems) => {
@@ -47,9 +67,9 @@ const Transaksi = () => {
       }
     });
   };
-  // ✅ Fungsi untuk menangani hasil scan barcode
+
   const handleScan = (barcode: string) => {
-    setIsScannerOpen(false); // ✅ Tutup scanner setelah scan berhasil
+    setIsScannerOpen(false);
     const barangDitemukan = barangTersedia.find((barang) => barang.kode === barcode);
 
     if (barangDitemukan) {
@@ -81,7 +101,7 @@ const Transaksi = () => {
 
   const onUbahJumlah = (kode: string, jumlahBaru: number) => {
     if (jumlahBaru < 1) jumlahBaru = 1;
-    
+
     setSelectedItems((prevItems) =>
       prevItems.map((item) =>
         item.kode === kode
@@ -93,7 +113,7 @@ const Transaksi = () => {
 
   const handleBayar = () => {
     if (selectedItems.length === 0) return alert("Pilih barang terlebih dahulu!");
-    
+
     const encodedData = encodeURIComponent(JSON.stringify(selectedItems));
     router.push(`/transaksi/pembayaran?data=${encodedData}&total=${totalHarga}`);
   };
@@ -111,17 +131,66 @@ const Transaksi = () => {
         <div className="w-full border-b border-gray-300 mb-6"></div>
 
         <div className="flex flex-grow p-6 gap-6">
+          {/* Kiri */}
           <div className="w-1/2 bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-lg font-bold mb-3">Kategori</h2>
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Cari nama atau kode barang..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
 
-            <div className="mt-4">
+            {/* ✅ Kategori */}
+            <div className="mb-4">
+              <button
+                onClick={() => setShowAllKategori((prev) => !prev)}
+                className="mb-2 px-4 py-2 bg-blue-500 text-white rounded-full"
+              >
+                {showAllKategori ? "Tutup" : "Tampilkan Semua Kategori"}
+              </button>
+
+              {showAllKategori && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
+                  <button
+                    onClick={() => setSelectedKategori(null)}
+                    className={`px-4 py-2 rounded-full border text-sm ${
+                      selectedKategori === null ? "bg-blue-500 text-white" : "bg-gray-200"
+                    }`}
+                  >
+                    Semua
+                  </button>
+                  {kategoriList.map((kategori) => (
+                    <button
+                      key={kategori}
+                      onClick={() => setSelectedKategori(kategori)}
+                      className={`px-4 py-2 rounded-full border text-sm ${
+                        selectedKategori === kategori ? "bg-blue-500 text-white" : "bg-gray-200"
+                      }`}
+                    >
+                      {kategori}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
               {filteredBarang.map((barang) => (
                 <button
                   key={barang.kode}
                   className="w-full text-left px-4 py-3 border border-gray-300 rounded-lg mb-2 hover:bg-gray-100 flex items-center"
                   onClick={() => tambahBarang(barang)}
                 >
-                  <Image src="/icons/box.svg" alt={barang.nama} width={40} height={40} className="mr-3 rounded-md" />
+                  <Image 
+                  src={barang.gambar || "/icons/box.svg"} // ✅ Ganti ke barang.gambar jika ada
+                  alt={barang.nama}
+                  width={40}
+                  height={40}
+                  className="mr-3 rounded-md object-cover"
+                  />
                   <div>
                     <span className="block font-semibold">{barang.nama}</span>
                     <span className="text-gray-500 text-sm">{`Rp ${barang.hargaJual.toLocaleString()} - Stok: ${barang.stok}`}</span>
@@ -131,41 +200,60 @@ const Transaksi = () => {
             </div>
           </div>
 
+          {/* Kanan */}
           <div className="w-1/2 bg-white rounded-lg shadow-md flex flex-col">
             <div className="p-6 flex-grow">
               <h2 className="text-lg font-bold mb-3">List Barang</h2>
               <ul>
                 {selectedItems.map((item) => (
                   <li key={item.kode} className="flex justify-between items-center py-3 border-b">
-
-                    {/* Gambar Produk */}
                     <Image src={item.gambar || "/icons/box.svg"} alt={item.nama} width={50} height={50} className="rounded-md" />
-
-                    {/* Detail Produk */}
                     <div className="flex-grow px-4">
                       <span className="block font-semibold">{item.nama}</span>
                       <span className="text-gray-500 text-sm">{`Rp ${item.hargaJual.toLocaleString()}`}</span>
                     </div>
-
-                    {/* Tombol Kurang dengan Ikon */}
                     <button onClick={() => onKurang(item.kode)} className="px-3">
                       <Image src="/icons/mines.svg" alt="Kurang" width={25} height={25} />
                     </button>
-
-                    {/* Input Jumlah (tanpa spinner di Safari) */}
                     <input
-                      type="number"
-                      value={item.jumlah}
-                      min=""
-                      max={item.stok}
-                      onChange={(e) => onUbahJumlah(item.kode, Number(e.target.value))}
-                      className="bg-gray-200 px-4 py-2 rounded-lg text-xl font-bold w-16 text-center appearance-none"
-                      style={{
-                        MozAppearance: "textfield",
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={item.jumlah === 0 ? "" : item.jumlah}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value)) {
+                          setSelectedItems((prevItems) =>
+                            prevItems.map((i) =>
+                              i.kode === item.kode
+                                ? { ...i, jumlah: value === "" ? 0 : Number(value) }
+                                : i
+                            )
+                          );
+                        }
                       }}
+                      onBlur={() => {
+                        if (item.jumlah < 1) {
+                          // Jika jumlah kosong atau nol → hapus item
+                          setSelectedItems((prevItems) =>
+                            prevItems.filter((i) => i.kode !== item.kode)
+                          );
+                        } else if (item.jumlah > item.stok) {
+                          // Batasi jumlah sesuai stok
+                          setSelectedItems((prevItems) =>
+                            prevItems.map((i) =>
+                              i.kode === item.kode ? { ...i, jumlah: item.stok } : i
+                            )
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur(); // Trigger blur untuk validasi
+                        }
+                      }}
+                      className="bg-gray-200 px-4 py-2 rounded-lg text-xl font-bold w-16 text-center appearance-none"
                     />
-
-                    {/* Tombol Tambah dengan Ikon */}
                     <button onClick={() => onTambah(item.kode)} className="px-3">
                       <Image src="/icons/plus.svg" alt="Tambah" width={25} height={25} />
                     </button>
@@ -186,6 +274,7 @@ const Transaksi = () => {
           </div>
         </div>
       </div>
+
       {isScannerOpen && <BarcodeScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />}
     </MainLayout>
   );

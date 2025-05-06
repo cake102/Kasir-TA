@@ -18,7 +18,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const beepSound = new Audio("/beep.mp3");
   const [scannedBarcode, setScannedBarcode] = useState("");
 
-  // 📌 1️⃣ Dapatkan daftar kamera
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({ video: true })
@@ -33,7 +32,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       .catch(() => setErrorMessage("Gagal mendapatkan daftar kamera. Coba berikan izin kamera."));
   }, []);
 
-  // 📌 2️⃣ Mulai scanner kamera
   useEffect(() => {
     if (!scannerRef.current || !kameraTerpilih || !isScanning) return;
 
@@ -42,7 +40,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     qrCodeScanner
       .start(
         kameraTerpilih,
-        { fps: 15, qrbox: { width: 400, height: 150 }, aspectRatio: 4, formatsToSupport: ["EAN_13", "UPC_A", "CODE_128"] },
+        {
+          fps: 15,
+          qrbox: { width: 250, height: 200 },
+          formatsToSupport: ["EAN_13", "UPC_A", "CODE_128"]
+        },
         (decodedText) => {
           if (decodedText === lastScannedCodeRef.current) return;
           beepSound.play().catch(console.error);
@@ -60,7 +62,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     return () => qrCodeScanner.stop().catch(console.error);
   }, [kameraTerpilih, isScanning]);
 
-  // 📌 3️⃣ Menangkap input dari scanner USB
   useEffect(() => {
     let barcodeBuffer = "";
     let timeout: NodeJS.Timeout;
@@ -68,32 +69,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     const handleKeydown = (event: KeyboardEvent) => {
       const key = event.key;
 
-      // ✅ Hanya menerima angka & huruf (tanpa karakter khusus)
       if (/^[a-zA-Z0-9]$/.test(key)) {
         barcodeBuffer += key;
-        console.log(`🔤 Karakter diterima: ${key}`);
       }
 
-      // Jika tombol Enter ditekan, barcode selesai
       if (event.key === "Enter" || event.key === "Tab") {
-        event.preventDefault(); // 🔥 Hindari pindah field karena Tab
+        event.preventDefault();
         if (barcodeBuffer.length > 3) {
-          console.log(`✅ Barcode lengkap: ${barcodeBuffer}`);
-
-          // 🚀 Filter karakter tambahan
           barcodeBuffer = barcodeBuffer.trim();
-
           beepSound.play().catch(console.error);
           onScan(barcodeBuffer);
           setScannedBarcode(barcodeBuffer);
-          barcodeBuffer = ""; // Reset buffer
+          barcodeBuffer = "";
         }
       }
 
-      // Reset jika tidak ada input dalam 500ms
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        console.log("⏳ Reset buffer barcode (karena tidak ada input dalam 500ms)");
         barcodeBuffer = "";
       }, 500);
     };
@@ -101,6 +93,22 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     document.addEventListener("keydown", handleKeydown);
     return () => document.removeEventListener("keydown", handleKeydown);
   }, [onScan]);
+
+  // 🔧 Force style untuk video agar tidak overflow dan tampil penuh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const video = scannerRef.current?.querySelector("video");
+      if (video) {
+        video.style.width = "100%";
+        video.style.height = "100%";
+        video.style.objectFit = "cover";
+        video.style.borderRadius = "0.375rem"; // Sama dengan rounded-md
+        clearInterval(interval);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleClose = () => {
     setIsScanning(false);
@@ -110,7 +118,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   return (
     isScanning && (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
-        <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-xs flex flex-col justify-center relative">
+        <div
+          className="bg-white p-4 rounded-lg shadow-lg w-full max-w-xs flex flex-col justify-center relative"
+          style={{ maxHeight: "90vh", overflow: "hidden" }}
+        >
           <button className="absolute top-2 right-2 text-gray-600 hover:text-gray-800" onClick={handleClose}>
             <FaTimes className="text-lg" />
           </button>
@@ -123,7 +134,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             <select
               value={kameraTerpilih}
               onChange={(e) => setKameraTerpilih(e.target.value)}
-              className="w-full p-2 border rounded-md"
+              className="w-full p-1 border rounded-md"
             >
               {daftarKamera.map((kamera, index) => (
                 <option key={index} value={kamera.deviceId}>
@@ -134,9 +145,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           </div>
 
           {/* Scanner Kamera */}
-          <div id="scanner-container" ref={scannerRef} className="w-full bg-black rounded-md" style={{ height: "200px" }}></div>
+          <div
+            id="scanner-container"
+            ref={scannerRef}
+            style={{
+              width: "100%",
+              height: "200px",
+              backgroundColor: "black",
+              borderRadius: "0.375rem",
+              position: "relative",
+              overflow: "hidden"
+            }}
+          ></div>
 
-          {/* Tampilkan hasil scan */}
+          {/* Hasil Scan */}
           {scannedBarcode && (
             <div className="mt-4 p-2 bg-green-100 border border-green-400 text-center font-bold text-green-600">
               {scannedBarcode}

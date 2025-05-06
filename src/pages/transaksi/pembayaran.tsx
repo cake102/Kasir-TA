@@ -1,9 +1,15 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import MainLayout from "../../layouts/MainLayout";
 import UserProfile from "../../components/UserProfile";
 import Image from "next/image";
 import PopupSukses from "./PopupSukses";
+
+const formatRupiah = (angka: string): string => {
+  const numericValue = parseInt(angka.replace(/\D/g, ""), 10);
+  if (isNaN(numericValue)) return "Rp 0";
+  return "Rp " + numericValue.toLocaleString("id-ID");
+};
 
 const Pembayaran = () => {
   const router = useRouter();
@@ -13,10 +19,13 @@ const Pembayaran = () => {
   const [metodePembayaran, setMetodePembayaran] = useState("Cash");
   const [showPopupSukses, setShowPopupSukses] = useState(false);
   const [kembalian, setKembalian] = useState<number | null>(null);
+  const [lastTransaksi, setLastTransaksi] = useState<any>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [tempJumlah, setTempJumlah] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (router.query.data) {
-      const decodedData = JSON.parse(decodeURIComponent(router.query.data));
+      const decodedData = JSON.parse(decodeURIComponent(router.query.data as string));
       setSelectedItems(decodedData);
       setTotalHarga(Number(router.query.total));
     }
@@ -27,28 +36,20 @@ const Pembayaran = () => {
       setInputPembayaran("");
     } else if (value === "Backspace" || value === "←") {
       setInputPembayaran((prev) => prev.slice(0, -1));
-    } else if (/^[0-9.]$/.test(value)) {
+    } else if (value === "✔") {
+      handleBayar();
+    } else if (/^[0-9.]$/.test(value) || value === "00") {
       setInputPembayaran((prev) => prev + value);
     }
   };
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      handleInput(event.key);
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  const handleBayar = () => {
+  const handleBayar = useCallback(() => {
     const cashGiven = parseFloat(inputPembayaran) || 0;
     if (metodePembayaran === "Cash" && cashGiven < totalHarga) {
       alert("Uang yang diberikan kurang!");
       return;
     }
 
-    // 🔹 Kurangi stok barang di `localStorage`
     const barangList = JSON.parse(localStorage.getItem("barangList") || "[]");
 
     const updatedBarangList = barangList.map((barang: any) => {
@@ -59,16 +60,14 @@ const Pembayaran = () => {
       return barang;
     });
 
-    // Simpan kembali data barang yang stoknya sudah berkurang
     localStorage.setItem("barangList", JSON.stringify(updatedBarangList));
 
-    // 🔹 Simpan transaksi ke `localStorage` dengan daftar barang
     const transaksiBaru = {
       id: `TRX${Date.now()}`,
       waktuOrder: new Date().toLocaleString(),
       waktuBayar: new Date().toLocaleString(),
       outlet: "Outlet 1",
-      barangList: selectedItems, // ✅ Simpan barang dalam transaksi
+      barangList: selectedItems,
       total: totalHarga,
       metode: metodePembayaran,
     };
@@ -77,7 +76,52 @@ const Pembayaran = () => {
     localStorage.setItem("transaksi", JSON.stringify([transaksiBaru, ...transaksiSebelumnya]));
 
     setKembalian(cashGiven - totalHarga);
+    setLastTransaksi(transaksiBaru);
     setShowPopupSukses(true);
+  }, [inputPembayaran, selectedItems, totalHarga, metodePembayaran]);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (isInputFocused || showPopupSukses) return;
+      if (event.key === "Enter") {
+        handleBayar();
+      } else {
+        handleInput(event.key);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [isInputFocused, showPopupSukses, handleBayar]);
+
+  const handleEditJumlah = (kode: string, jumlahBaru: number) => {
+    const stokTersedia = selectedItems.find(item => item.kode === kode)?.stok || 1;
+    const jumlahFinal = Math.min(jumlahBaru, stokTersedia);
+
+    if (jumlahFinal < 1) {
+      handleHapusBarang(kode);
+      return;
+    }
+
+    const updatedItems = selectedItems.map(item =>
+      item.kode === kode ? { ...item, jumlah: jumlahFinal } : item
+    );
+    setSelectedItems(updatedItems);
+
+    const total = updatedItems.reduce((acc, item) => acc + item.hargaJual * item.jumlah, 0);
+    setTotalHarga(total);
+  };
+
+  const handleHapusBarang = (kode: string) => {
+    const updatedItems = selectedItems.filter(item => item.kode !== kode);
+    setSelectedItems(updatedItems);
+
+    const total = updatedItems.reduce((acc, item) => acc + item.hargaJual * item.jumlah, 0);
+    setTotalHarga(total);
+
+    if (updatedItems.length === 0) {
+      router.push("/transaksi");
+    }
   };
 
   return (
@@ -98,11 +142,82 @@ const Pembayaran = () => {
               {selectedItems.map((item: any) => (
                 <li key={item.kode} className="flex justify-between items-center py-3 border-b">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold">{item.jumlah}</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      className="w-16 p-1 border rounded text-center"
+                      value={tempJumlah[item.kode] ?? item.jumlah}
+                      min={1}
+                      max={item.stok}
+                      onFocus={(e) => {
+                        setIsInputFocused(true);
+                        setTempJumlah((prev) => ({
+                          ...prev,
+                          [item.kode]: item.jumlah.toString(),
+                        }));
+                        e.target.select();
+                      }}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed)) {
+                          val = Math.min(parsed, item.stok).toString();
+                        }
+                        setTempJumlah((prev) => ({ ...prev, [item.kode]: val }));
+                      }}
+                      onKeyDown={(e) => {
+                        const originalJumlah = selectedItems.find(i => i.kode === item.kode)?.jumlah ?? 1;
+                        const inputValue = tempJumlah[item.kode] || "";
+                        const parsed = parseInt(inputValue, 10);
+
+                        if (e.key === "Escape") {
+                          e.stopPropagation();
+                          if (!isNaN(parsed) && parsed !== originalJumlah && parsed >= 1) {
+                            handleEditJumlah(item.kode, parsed);
+                          } else {
+                            setTempJumlah((prev) => ({
+                              ...prev,
+                              [item.kode]: originalJumlah.toString(),
+                            }));
+                          }
+                          (e.target as HTMLInputElement).blur();
+                        }
+
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isNaN(parsed) && parsed >= 1) {
+                            handleEditJumlah(item.kode, parsed);
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        setIsInputFocused(false);
+                        const val = e.target.value.trim();
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed) && parsed >= 1) {
+                          handleEditJumlah(item.kode, parsed);
+                        } else {
+                          setTempJumlah((prev) => ({
+                            ...prev,
+                            [item.kode]: item.jumlah.toString(),
+                          }));
+                        }
+                      }}
+                    />
                     <Image src="/icons/box.svg" alt={item.nama} width={40} height={40} className="rounded-md" />
                     <span className="font-semibold">{item.nama}</span>
                   </div>
-                  <span className="text-lg">{`Rp ${(item.hargaJual * item.jumlah).toLocaleString()}`}</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-lg">{`Rp ${(item.hargaJual * item.jumlah).toLocaleString()}`}</span>
+                    <button
+                      onClick={() => handleHapusBarang(item.kode)}
+                      className="text-red-500 font-bold px-2 py-1 border border-red-500 rounded hover:bg-red-500 hover:text-white"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -131,11 +246,11 @@ const Pembayaran = () => {
             <h2 className="text-lg font-bold mb-3">Pembayaran</h2>
 
             <div className="w-full p-3 text-xl text-center border border-gray-300 rounded-lg mb-4">
-              {inputPembayaran || "Rp 0"}
+              {formatRupiah(inputPembayaran)}
             </div>
 
             <div className="grid grid-cols-4 gap-2">
-              {["1", "2", "3", "C", "4", "5", "6", "←", "7", "8", "9", ".", "0", "00", "000", "✔"].map((num) => (
+              {["1", "2", "3", "C", "4", "5", "6", "←", "7", "8", "9", ".", "0", "00", "✔"].map((num) => (
                 <button
                   key={num}
                   onClick={() => handleInput(num)}
@@ -162,7 +277,13 @@ const Pembayaran = () => {
         </div>
       </div>
 
-      {showPopupSukses && <PopupSukses kembalian={kembalian} onClose={() => router.push("/laporan")} />}
+      {showPopupSukses && (
+        <PopupSukses
+          kembalian={kembalian}
+          transaksi={lastTransaksi}
+          onClose={() => router.push("/transaksi")}
+        />
+      )}
     </MainLayout>
   );
 };

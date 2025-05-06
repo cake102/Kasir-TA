@@ -5,37 +5,52 @@ import { useRouter } from "next/router";
 const Login = () => {
   const router = useRouter();
 
-  // 🔹 State untuk username & password
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // 🔹 Simpan data akun sementara di localStorage (jika belum ada)
   useEffect(() => {
-    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    if (existingUsers.length === 0) {
-      localStorage.setItem(
-        "users",
-        JSON.stringify([
-          { username: "admin", password: "admin123", role: "Owner" },
-          { username: "staff", password: "staff123", role: "Staff" },
-        ])
-      );
+    if (typeof window !== "undefined") {
+      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      if (existingUsers.length === 0) {
+        localStorage.setItem(
+          "users",
+          JSON.stringify([
+            { username: "admin", password: "admin123", role: "Owner" },
+            { username: "staff", password: "staff123", role: "Staff" },
+          ])
+        );
+      }
     }
   }, []);
 
-  // 🔹 Fungsi Login
-  const handleLogin = (e: any) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Reset error
+    setError("");
 
     const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find((u: any) => u.username === username && u.password === password);
+    const user = users.find(
+      (u: any) => u.username === username && u.password === password
+    );
 
     if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user)); // Simpan user yang login
-      router.push("/"); // 🔹 Redirect ke halaman utama setelah login
+      localStorage.setItem("currentUser", JSON.stringify(user));
+
+      const profileKey = `userProfile-${user.username}`;
+      if (!localStorage.getItem(profileKey)) {
+        const defaultProfile = {
+          name: user.username,
+          role: user.role,
+          email: `${user.username}@example.com`,
+          phone: "",
+          address: "",
+          imageUrl: "",
+        };
+        localStorage.setItem(profileKey, JSON.stringify(defaultProfile));
+      }
+
+      router.push("/");
     } else {
       setError("Username atau Password salah!");
     }
@@ -43,25 +58,20 @@ const Login = () => {
 
   return (
     <div className="h-screen w-screen bg-gray-100 flex flex-col">
-      {/* 🔹 Header dengan Logo */}
       <div className="p-6 absolute top-0 left-0 flex items-center gap-2">
         <Image src="/icons/icon.svg" alt="Logo" width={150} height={100} />
       </div>
 
-      {/* 🔹 Container Utama */}
       <div className="h-full flex items-center justify-center">
         <div className="flex w-full max-w-5xl">
-          {/* 🔹 Bagian Kiri: Gambar */}
           <div className="w-1/2 flex items-center justify-center">
             <Image src="/icons/gambar.svg" alt="Login" width={350} height={350} />
           </div>
 
-          {/* 🔹 Bagian Kanan: Form Login */}
           <div className="w-1/2 px-12 flex flex-col justify-center">
             <h2 className="text-2xl font-bold">Masuk ke Akun Anda</h2>
             <p className="text-gray-500 text-sm">Kamu dapat masuk sebagai owner ataupun staf</p>
 
-            {/* 🔹 Form Login */}
             <form onSubmit={handleLogin} className="mt-4 space-y-4">
               <div>
                 <label className="text-sm font-medium">Username</label>
@@ -94,14 +104,14 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* 🔹 Error Message */}
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
-              {/* 🔹 Tombol Login */}
-              <button type="submit" className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600">
+              <button
+                type="submit"
+                className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600"
+              >
                 Login
               </button>
-
             </form>
           </div>
         </div>

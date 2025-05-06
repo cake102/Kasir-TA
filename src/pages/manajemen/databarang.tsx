@@ -108,14 +108,43 @@ const DataBarang = () => {
             <h2 className="text-lg font-bold">Rincian Barang :</h2>
             <div className="flex-grow overflow-y-auto mt-4">
               {selectedBarang ? (
-                <div className="space-y-3">
-                  <p><strong>Nama:</strong> {selectedBarang.nama}</p>
-                  <p><strong>Kategori:</strong> {selectedBarang.kategori}</p>
-                  <p><strong>Kode:</strong> {selectedBarang.kode}</p>
-                  <p><strong>Stok:</strong> {selectedBarang.stok}</p>
-                  <p><strong>Harga Dasar:</strong> Rp {selectedBarang.hargaDasar.toLocaleString()}</p>
-                  <p><strong>Harga Jual:</strong> Rp {selectedBarang.hargaJual.toLocaleString()}</p>
+                <div className="space-y-4">
+                {selectedBarang.gambar && (
+                  <div className="flex justify-center">
+                    <img
+                      src={selectedBarang.gambar}
+                      alt={`Gambar ${selectedBarang.nama}`}
+                      className="w-48 h-48 object-cover border rounded-md"
+                    />
+                  </div>
+                )}
+              
+                <div className="grid grid-cols-[150px_10px_1fr] gap-y-2 text-gray-700">
+                  <div className="font-semibold">Nama</div>
+                  <div>:</div>
+                  <div>{selectedBarang.nama}</div>
+              
+                  <div className="font-semibold">Kategori</div>
+                  <div>:</div>
+                  <div>{selectedBarang.kategori}</div>
+              
+                  <div className="font-semibold">Kode</div>
+                  <div>:</div>
+                  <div>{selectedBarang.kode}</div>
+              
+                  <div className="font-semibold">Stok</div>
+                  <div>:</div>
+                  <div>{selectedBarang.stok}</div>
+              
+                  <div className="font-semibold">Harga Dasar</div>
+                  <div>:</div>
+                  <div>Rp {selectedBarang.hargaDasar.toLocaleString()}</div>
+              
+                  <div className="font-semibold">Harga Jual</div>
+                  <div>:</div>
+                  <div>Rp {selectedBarang.hargaJual.toLocaleString()}</div>
                 </div>
+              </div>
               ) : (
                 <div className="flex items-center justify-center text-gray-400 h-full">
                   Tidak ada barang yang dipilih

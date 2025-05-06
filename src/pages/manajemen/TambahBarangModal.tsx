@@ -13,19 +13,28 @@ const TambahBarangModal = ({
 }) => {
   const [kodeBarang, setKodeBarang] = useState("");
   const [namaBarang, setNamaBarang] = useState("");
-  const [stok, setStok] = useState(0);
-  const [hargaDasar, setHargaDasar] = useState(0);
-  const [hargaJual, setHargaJual] = useState(0);
+  const [stok, setStok] = useState(""); // 🔹 Ubah dari number ke string
+  const [hargaDasar, setHargaDasar] = useState(""); // 🔹 Ubah dari number ke string
+  const [hargaJual, setHargaJual] = useState(""); // 🔹 Ubah dari number ke string
   const [kategori, setKategori] = useState("");
   const [kategoriList, setKategoriList] = useState<string[]>([]);
-  const [showScanner, setShowScanner] = useState(false); // Tambahkan state scanner
-
+  const [showScanner, setShowScanner] = useState(false);
+  const [gambar, setGambar] = useState<string | null>(null)
+  const handleGambarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGambar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   useEffect(() => {
-    // Load kategori dari localStorage
     const savedKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
     setKategoriList(savedKategori);
     if (savedKategori.length > 0) {
-      setKategori(savedKategori[0]); // Set kategori default
+      setKategori(savedKategori[0]);
     }
   }, []);
 
@@ -43,35 +52,29 @@ const TambahBarangModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!namaBarang.trim() || !kategori) return; // Cegah input kosong
+    if (!namaBarang.trim() || !kategori || !stok || !hargaDasar || !hargaJual) return;
 
     const newBarang = {
       nama: namaBarang,
       kode: kodeBarang,
-      stok,
-      hargaDasar,
-      hargaJual,
+      stok: Number(stok),
+      hargaDasar: Number(hargaDasar),
+      hargaJual: Number(hargaJual),
       kategori,
+      gambar,
     };
-
-    // Ambil barang yang sudah ada di localStorage
     const existingBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
-
-    // Tambahkan barang baru
     const updatedBarang = [...existingBarang, newBarang];
 
-    // Simpan ke localStorage
     localStorage.setItem("barangList", JSON.stringify(updatedBarang));
-
-    // Kirim data ke halaman utama
     onBarangTambah(newBarang);
 
-    // Reset input & Tutup Modal
+    // Reset input
     setNamaBarang("");
     setKodeBarang("");
-    setStok(0);
-    setHargaDasar(0);
-    setHargaJual(0);
+    setStok("");
+    setHargaDasar("");
+    setHargaJual("");
     setKategori(kategoriList.length > 0 ? kategoriList[0] : "");
     onClose();
   };
@@ -79,23 +82,39 @@ const TambahBarangModal = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-lg p-6 shadow-lg overflow-y-auto max-h-[90vh]">
-        {/* 🔹 Header Modal */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Tambah Barang</h2>
           <FaTimes className="text-gray-500 cursor-pointer" onClick={onClose} />
         </div>
 
-        {/* 🔹 Upload Gambar */}
+        {/* Upload Gambar */}
         <div className="flex flex-col items-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-            <FaCamera className="text-gray-400 text-2xl" />
+          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+            {gambar ? (
+              <img src={gambar} alt="Preview" className="w-full h-full object-cover" />
+            ) : (
+              <FaCamera className="text-gray-400 text-2xl" />          
+            )}
           </div>
-          <button className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-lg text-sm">Ubah</button>
+          <input
+          type="file"
+          accept="image/*"
+          id="gambar-upload"
+          onChange={handleGambarChange}
+          hidden
+          />
+          <label
+          htmlFor="gambar-upload"
+          className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-lg test-sm cursor-pointer"
+          >
+            Ubah
+          </label>
         </div>
 
-        {/* 🔹 Form Input */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          {/* Nama Barang */}
+          {/* Nama */}
           <label className="text-sm font-medium">Nama*</label>
           <input
             type="text"
@@ -105,14 +124,15 @@ const TambahBarangModal = ({
             className="w-full p-2 border rounded-md"
           />
 
-          {/* Stok & Kode Barang */}
+          {/* Stok & Kode */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">Stok*</label>
               <input
                 type="number"
                 value={stok}
-                onChange={(e) => setStok(Number(e.target.value))}
+                onChange={(e) => setStok(e.target.value)}
+                placeholder="Masukkan stok"
                 className="w-full p-2 border rounded-md"
               />
             </div>
@@ -153,7 +173,8 @@ const TambahBarangModal = ({
               <input
                 type="number"
                 value={hargaDasar}
-                onChange={(e) => setHargaDasar(Number(e.target.value))}
+                onChange={(e) => setHargaDasar(e.target.value)}
+                placeholder="Masukkan harga dasar"
                 className="w-full p-2 border rounded-md"
               />
             </div>
@@ -162,7 +183,8 @@ const TambahBarangModal = ({
               <input
                 type="number"
                 value={hargaJual}
-                onChange={(e) => setHargaJual(Number(e.target.value))}
+                onChange={(e) => setHargaJual(e.target.value)}
+                placeholder="Masukkan harga jual"
                 className="w-full p-2 border rounded-md"
               />
             </div>
@@ -186,14 +208,14 @@ const TambahBarangModal = ({
             )}
           </select>
 
-          {/* 🔹 Tombol Simpan */}
+          {/* Tombol Simpan */}
           <button type="submit" className="w-full bg-blue-500 text-white p-3 rounded-lg mt-3">
             Simpan
           </button>
         </form>
       </div>
 
-      {/* Scanner Modal */}
+      {/* Barcode Scanner */}
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
     </div>
   );

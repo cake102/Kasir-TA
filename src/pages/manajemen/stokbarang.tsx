@@ -4,22 +4,55 @@ import UserProfile from "../../components/UserProfile";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { FaArrowLeft } from "react-icons/fa";
+import EditStokModal from "./EditStokModal"; // Import modal
+import PopupEkspor from "./PopupEkspor"; // ✅ Import popup ekspor
 
 const StokBarang = () => {
   const router = useRouter();
   const [barangList, setBarangList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBarang, setSelectedBarang] = useState<any>(null); // State untuk barang yang dipilih
+  const [showPopupEkspor, setShowPopupEkspor] = useState(false); // State untuk modal ekspor
 
-  // 🔹 Load barang dari localStorage saat halaman dimuat
   useEffect(() => {
     const savedBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
     setBarangList(savedBarang);
   }, []);
 
-  // 🔹 Filter barang berdasarkan pencarian
   const filteredBarang = barangList.filter((barang) =>
     barang.nama.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleEditClick = (barang: any) => {
+    setSelectedBarang(barang);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = (updatedBarang: any) => {
+    const updatedList = barangList.map((barang) =>
+      barang.kode === updatedBarang.kode ? updatedBarang : barang
+    );
+    setBarangList(updatedList);
+    localStorage.setItem("barangList", JSON.stringify(updatedList));
+  };
+
+  const handleDeleteClick = (kode: string) => {
+    const konfirmasi = window.confirm("Apakah Anda yakin ingin menghapus barang ini?");
+    if (!konfirmasi) return;
+  
+    const updatedList = barangList.filter((barang) => barang.kode !== kode);
+    setBarangList(updatedList);
+    localStorage.setItem("barangList", JSON.stringify(updatedList));
+  };
+
+  const handleOpenPopupEkspor = () => {
+    setShowPopupEkspor(true);
+  };
+
+  const handleExport = (format: string) => {
+    console.log(`Mengekspor data dalam format: ${format}`);
+  };
 
   return (
     <MainLayout>
@@ -42,14 +75,17 @@ const StokBarang = () => {
         {/* 🔹 Tombol Export & Import */}
         <div className="flex justify-between items-center px-6 mt-4 w-[96%] mx-auto">
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-              <Image src="/icons/export.svg" alt="Export" width={20} height={20} />
-              Export Data
+            <button
+              onClick={handleOpenPopupEkspor}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            >
+              {/* <Image src="/icons/export.svg" alt="Export" width={20} height={20} /> */}
+              Export & Import Data
             </button>
-            <button className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+            {/* <button className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
               <Image src="/icons/import.svg" alt="Import" width={20} height={20} />
               Import Data
-            </button>
+            </button> */}
           </div>
 
           {/* 🔹 Search Input */}
@@ -72,6 +108,7 @@ const StokBarang = () => {
             <table className="w-full border-collapse border">
               <thead>
                 <tr className="bg-blue-500 text-white text-left">
+                  <th className="p-3 border">Gambar</th>
                   <th className="p-3 border">Nama Barang</th>
                   <th className="p-3 border">Kode</th>
                   <th className="p-3 border">Kategori</th>
@@ -81,17 +118,39 @@ const StokBarang = () => {
                   <th className="p-3 border">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="align-top"> {/* 🔹 Data mulai dari atas */}
+              <tbody className="align-top">
                 {filteredBarang.length > 0 ? (
                   filteredBarang.map((barang, index) => (
                     <tr key={index} className="border">
+                      <td className="p-3 border">
+                        <Image
+                          src={barang.gambar || "/icons/box.svg"} // ⬅ Gunakan gambar dari data
+                          alt={barang.nama}
+                          width={50}
+                          height={50}
+                          className="rounded-md object-cover"
+                        />
+                      </td>
                       <td className="p-3 border">{barang.nama}</td>
                       <td className="p-3 border">{barang.kode}</td>
                       <td className="p-3 border">{barang.kategori}</td>
                       <td className="p-3 border">{barang.stok}</td>
                       <td className="p-3 border">Rp {barang.hargaJual.toLocaleString()}</td>
                       <td className="p-3 border">Rp {barang.hargaDasar.toLocaleString()}</td>
-                      <td className="p-3 border text-red-500 cursor-pointer hover:text-red-700">Hapus</td>
+                      <td className="p-3 border">
+                        <span
+                          onClick={() => handleEditClick(barang)}
+                          className="text-green-500 cursor-pointer hover:text-green-700 mr-4"
+                        >
+                          Edit
+                        </span>
+                        <span
+                          onClick={() => handleDeleteClick(barang.kode)}
+                          className="text-red-500 cursor-pointer hover:text-red-700"
+                        >
+                          Hapus
+                        </span>
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -125,6 +184,21 @@ const StokBarang = () => {
             </div>
           </div>
         </div>
+
+        {/* 🔹 Modal Edit Stok */}
+        <EditStokModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          barang={selectedBarang}
+          onSave={handleSave}
+        />
+
+        {/* 🔹 Popup Ekspor */}
+        <PopupEkspor
+          isOpen={showPopupEkspor}
+          onClose={() => setShowPopupEkspor(false)}
+          onExport={handleExport}
+        />
       </div>
     </MainLayout>
   );

@@ -1,38 +1,52 @@
 import { FaTimes } from "react-icons/fa";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const TambahKategoriModal = ({
   isOpen,
   onClose,
-  onKategoriTambah, // 🔹 Callback untuk update daftar kategori di halaman utama
+  onKategoriTambah,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onKategoriTambah: (kategoriBaru: string) => void;
 }) => {
-  const [kategori, setKategori] = useState(""); // 🔹 State untuk input kategori
+  const [kategori, setKategori] = useState("");
+  const [error, setError] = useState("");
 
-  if (!isOpen) return null; // Jika modal tidak aktif, tidak ditampilkan
+  if (!isOpen) return null;
 
   // 🔹 Handle Submit Kategori
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!kategori.trim()) return; // 🔹 Cegah kategori kosong
+    const trimmed = kategori.trim();
 
-    // Ambil kategori yang sudah ada di localStorage
+    // 🔸 Validasi input kosong
+    if (!trimmed) {
+      setError("Nama kategori tidak boleh kosong");
+      return;
+    }
+
+    // 🔸 Ambil dan normalisasi kategori yang sudah ada
     const existingKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
 
-    // Tambahkan kategori baru
-    const updatedKategori = [...existingKategori, kategori];
+    const isDuplicate = existingKategori.some(
+      (item: string) => item.toLowerCase() === trimmed.toLowerCase()
+    );
 
-    // Simpan ke localStorage
+    // 🔸 Validasi duplikat
+    if (isDuplicate) {
+      setError("Nama kategori sudah ada");
+      return;
+    }
+
+    // 🔸 Tambahkan kategori baru
+    const updatedKategori = [...existingKategori, trimmed];
     localStorage.setItem("kategoriBarang", JSON.stringify(updatedKategori));
+    onKategoriTambah(trimmed);
 
-    // 🔹 Kirim data ke halaman utama
-    onKategoriTambah(kategori);
-
-    // Reset input & Tutup Modal
+    // 🔸 Reset & Tutup Modal
     setKategori("");
+    setError("");
     onClose();
   };
 
@@ -43,7 +57,14 @@ const TambahKategoriModal = ({
         {/* 🔹 Header Modal */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Tambah Kategori</h2>
-          <FaTimes className="text-gray-500 cursor-pointer" onClick={onClose} />
+          <FaTimes
+            className="text-gray-500 cursor-pointer"
+            onClick={() => {
+              setKategori("");
+              setError("");
+              onClose();
+            }}
+          />
         </div>
 
         {/* 🔹 Garis Pembatas */}
@@ -51,15 +72,23 @@ const TambahKategoriModal = ({
 
         {/* 🔹 Form Input */}
         <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Nama Kategori */}
+          {/* Label */}
           <label className="text-sm font-medium">Nama Kategori</label>
+
+          {/* Input */}
           <input 
             type="text" 
             value={kategori} 
-            onChange={(e) => setKategori(e.target.value)} 
+            onChange={(e) => {
+              setKategori(e.target.value);
+              setError(""); // 🔸 Hapus error saat user mulai mengetik ulang
+            }} 
             placeholder="Masukkan nama.." 
             className="w-full p-2 border rounded-md bg-gray-100"
           />
+
+          {/* 🔹 Pesan Error */}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           {/* 🔹 Tombol Tambah */}
           <button 

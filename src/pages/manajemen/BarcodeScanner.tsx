@@ -38,6 +38,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     if (!scannerRef.current || !kameraTerpilih || !isScanning) return;
 
     const qrCodeScanner = new Html5Qrcode("scanner-container", {
+      verbose: false,
       formatsToSupport: [
         Html5QrcodeSupportedFormats.EAN_13,
         Html5QrcodeSupportedFormats.CODE_128,

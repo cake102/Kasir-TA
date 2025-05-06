@@ -2,17 +2,24 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 
+// Definisikan tipe untuk User
+type User = {
+  username: string;
+  password: string;
+  role: string;
+};
+
 const Login = () => {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const existingUsers: User[] = JSON.parse(localStorage.getItem("users") || "[]");
       if (existingUsers.length === 0) {
         localStorage.setItem(
           "users",
@@ -29,9 +36,9 @@ const Login = () => {
     e.preventDefault();
     setError("");
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
     const user = users.find(
-      (u: any) => u.username === username && u.password === password
+      (u: User) => u.username === username && u.password === password
     );
 
     if (user) {

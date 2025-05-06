@@ -29,7 +29,6 @@ const UserProfile = () => {
           imageUrl: profileData.imageUrl || "",
         });
       } else {
-        // Fallback jika tidak ada data profile
         setUserData({
           name: currentUser.username,
           email: `${currentUser.username}@example.com`,
@@ -57,7 +56,13 @@ const UserProfile = () => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {userData.imageUrl ? (
-          <img src={userData.imageUrl} alt="User Profile" className="w-full h-full object-cover" />
+          <Image 
+            src={userData.imageUrl} 
+            alt="User Profile" 
+            width={48} 
+            height={48} 
+            className="w-full h-full object-cover" 
+          />
         ) : (
           <Image src="/profil.jpg" alt="Default Profile" width={48} height={48} />
         )}
@@ -82,7 +87,13 @@ const UserProfile = () => {
           <div className="flex flex-col items-center text-center">
             <div className="relative w-20 h-20 rounded-full overflow-hidden border border-gray-300">
               {userData.imageUrl ? (
-                <img src={userData.imageUrl} alt="User Profile" className="w-full h-full object-cover" />
+                <Image
+                  src={userData.imageUrl}
+                  alt="User Profile"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <Image src="/profil.jpg" alt="Default Profile" width={80} height={80} />
               )}

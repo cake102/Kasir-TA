@@ -1,13 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 
 const PopupSukses = ({ kembalian, transaksi, onClose }) => {
-  const handlePrint = () => {
-    // 👉 Tambahkan logika pemrosesan transaksi di sini jika belum
+  const handlePrint = useCallback(() => {
     if (transaksi && transaksi.barangList) {
       transaksi.barangList.forEach(item => {
-        // Panggil fungsi pengurangan stok per item di sini (atau dispatch)
         console.log(`Kurangi stok untuk ${item.nama}`);
-        // Misalnya: updateStok(item.id, -item.jumlah);
       });
     }
 
@@ -58,20 +55,23 @@ const PopupSukses = ({ kembalian, transaksi, onClose }) => {
       `);
       printWindow.document.close();
     }
-  };
+  }, [transaksi]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        handlePrint();
+      } else if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [handlePrint, onClose]
+  );
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        handlePrint(); // Simulasikan klik Print
-      } else if (e.key === "Escape") {
-        onClose(); // Simulasikan klik Selesai
-      }
-    };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [transaksi]);
+  }, [handleKeyDown]);
 
   return (
     <>

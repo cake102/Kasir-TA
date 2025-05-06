@@ -5,6 +5,26 @@ import UserProfile from "../../components/UserProfile";
 import Image from "next/image";
 import PopupSukses from "./PopupSukses";
 
+// Mendefinisikan tipe data untuk Item dan Transaksi
+interface Item {
+  kode: string;
+  nama: string;
+  hargaJual: number;
+  stok: number;
+  jumlah: number;
+}
+
+interface Transaksi {
+  id: string;
+  waktuOrder: string;
+  waktuBayar: string;
+  outlet: string;
+  barangList: Item[];
+  total: number;
+  metode: string;
+}
+
+// Fungsi untuk format harga menjadi format Rupiah
 const formatRupiah = (angka: string): string => {
   const numericValue = parseInt(angka.replace(/\D/g, ""), 10);
   if (isNaN(numericValue)) return "Rp 0";
@@ -13,15 +33,15 @@ const formatRupiah = (angka: string): string => {
 
 const Pembayaran = () => {
   const router = useRouter();
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
-  const [totalHarga, setTotalHarga] = useState(0);
-  const [inputPembayaran, setInputPembayaran] = useState("");
-  const [metodePembayaran, setMetodePembayaran] = useState("Cash");
-  const [showPopupSukses, setShowPopupSukses] = useState(false);
-  const [kembalian, setKembalian] = useState<number | null>(null);
-  const [lastTransaksi, setLastTransaksi] = useState<any>(null);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [tempJumlah, setTempJumlah] = useState<Record<string, string>>({});
+  const [selectedItems, setSelectedItems] = useState<Item[]>([]); // State untuk menyimpan barang yang dipilih
+  const [totalHarga, setTotalHarga] = useState(0); // Total harga dari barang yang dipilih
+  const [inputPembayaran, setInputPembayaran] = useState(""); // Input untuk pembayaran
+  const [metodePembayaran, setMetodePembayaran] = useState("Cash"); // Metode pembayaran
+  const [showPopupSukses, setShowPopupSukses] = useState(false); // Untuk menampilkan popup sukses
+  const [kembalian, setKembalian] = useState<number | null>(null); // Menghitung kembalian
+  const [lastTransaksi, setLastTransaksi] = useState<Transaksi | null>(null); // Menyimpan transaksi terakhir
+  const [isInputFocused, setIsInputFocused] = useState(false); // Untuk fokus input
+  const [tempJumlah, setTempJumlah] = useState<Record<string, string>>({}); // Menyimpan jumlah sementara barang
 
   useEffect(() => {
     if (router.query.data) {
@@ -31,6 +51,7 @@ const Pembayaran = () => {
     }
   }, [router.query]);
 
+  // Fungsi untuk menangani input (angka dan perintah)
   const handleInput = (value: string) => {
     if (value === "C") {
       setInputPembayaran("");
@@ -43,6 +64,7 @@ const Pembayaran = () => {
     }
   };
 
+  // Fungsi untuk melakukan pembayaran
   const handleBayar = useCallback(() => {
     const cashGiven = parseFloat(inputPembayaran) || 0;
     if (metodePembayaran === "Cash" && cashGiven < totalHarga) {
@@ -50,10 +72,10 @@ const Pembayaran = () => {
       return;
     }
 
-    const barangList = JSON.parse(localStorage.getItem("barangList") || "[]");
+    const barangList = JSON.parse(localStorage.getItem("barangList") || "[]") as Item[];
 
-    const updatedBarangList = barangList.map((barang: any) => {
-      const itemDibeli = selectedItems.find((item: any) => item.kode === barang.kode);
+    const updatedBarangList = barangList.map((barang: Item) => {
+      const itemDibeli = selectedItems.find((item: Item) => item.kode === barang.kode);
       if (itemDibeli) {
         return { ...barang, stok: Math.max(barang.stok - itemDibeli.jumlah, 0) };
       }
@@ -62,7 +84,7 @@ const Pembayaran = () => {
 
     localStorage.setItem("barangList", JSON.stringify(updatedBarangList));
 
-    const transaksiBaru = {
+    const transaksiBaru: Transaksi = {
       id: `TRX${Date.now()}`,
       waktuOrder: new Date().toLocaleString(),
       waktuBayar: new Date().toLocaleString(),
@@ -94,6 +116,7 @@ const Pembayaran = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [isInputFocused, showPopupSukses, handleBayar]);
 
+  // Fungsi untuk mengedit jumlah barang
   const handleEditJumlah = (kode: string, jumlahBaru: number) => {
     const stokTersedia = selectedItems.find(item => item.kode === kode)?.stok || 1;
     const jumlahFinal = Math.min(jumlahBaru, stokTersedia);
@@ -112,6 +135,7 @@ const Pembayaran = () => {
     setTotalHarga(total);
   };
 
+  // Fungsi untuk menghapus barang dari daftar
   const handleHapusBarang = (kode: string) => {
     const updatedItems = selectedItems.filter(item => item.kode !== kode);
     setSelectedItems(updatedItems);
@@ -139,7 +163,7 @@ const Pembayaran = () => {
           <div className="w-1/2 bg-white shadow-md rounded-lg p-6">
             <h2 className="text-lg font-bold mb-3">List Barang</h2>
             <ul>
-              {selectedItems.map((item: any) => (
+              {selectedItems.map((item: Item) => (
                 <li key={item.kode} className="flex justify-between items-center py-3 border-b">
                   <div className="flex items-center gap-3">
                     <input
@@ -254,29 +278,19 @@ const Pembayaran = () => {
                 <button
                   key={num}
                   onClick={() => handleInput(num)}
-                  className={`w-full p-4 text-2xl rounded-lg border shadow ${
-                    num === "✔"
-                      ? "bg-green-500 text-white"
-                      : num === "C" || num === "←"
-                      ? "bg-red-500 text-white"
-                      : "bg-gray-100"
+                  className={`w-full p-4 text-2xl font-semibold border border-gray-300 rounded-md ${
+                    num === "✔" ? "bg-green-500 text-white" : "bg-gray-200"
                   }`}
                 >
                   {num}
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={handleBayar}
-              className="w-full mt-4 bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600"
-            >
-              Bayar
-            </button>
           </div>
         </div>
       </div>
 
+      {/* Popup Sukses */}
       {showPopupSukses && (
         <PopupSukses
           kembalian={kembalian}

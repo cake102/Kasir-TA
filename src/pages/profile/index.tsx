@@ -35,7 +35,7 @@ const Profile: FC = () => {
       setEditData(parsed);
       setImagePreview(parsed.imageUrl || null);
     }
-  }, []);
+  }, [router]); // ✅ Fixed dependency warning
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditData({ ...editData, [e.target.name]: e.target.value });
@@ -75,10 +75,12 @@ const Profile: FC = () => {
           <div className="flex justify-between items-center w-full max-w-2xl mb-4">
             <div className="flex items-center gap-4">
               {userData.imageUrl ? (
-                <img
+                <Image
                   src={userData.imageUrl}
                   alt="User Avatar"
-                  className="w-16 h-16 rounded-full border-4 border-white object-cover"
+                  width={64}
+                  height={64}
+                  className="rounded-full border-4 border-white object-cover"
                 />
               ) : (
                 <Image
@@ -194,10 +196,12 @@ const Profile: FC = () => {
                   className="w-full"
                 />
                 {imagePreview && (
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
-                    className="mt-2 w-20 h-20 object-cover rounded-full"
+                    width={80}
+                    height={80}
+                    className="mt-2 object-cover rounded-full"
                   />
                 )}
               </div>

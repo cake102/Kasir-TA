@@ -6,21 +6,32 @@ import { useState, useEffect } from "react";
 import BarcodeScanner from "../manajemen/BarcodeScanner";
 import { FaBarcode } from "react-icons/fa";
 
+// Define the Barang interface to make the typing more specific
+interface Barang {
+  kode: string;
+  nama: string;
+  hargaJual: number;
+  stok: number;
+  kategori: string;
+  gambar?: string;
+  jumlah?: number;
+}
+
 const Transaksi = () => {
   const router = useRouter();
-  const [barangTersedia, setBarangTersedia] = useState<any[]>([]);
+  const [barangTersedia, setBarangTersedia] = useState<Barang[]>([]);
   const [kategoriList, setKategoriList] = useState<string[]>([]);
   const [selectedKategori, setSelectedKategori] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Barang[]>([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [showAllKategori, setShowAllKategori] = useState(false); // ✅ tambahan
+  const [showAllKategori, setShowAllKategori] = useState(false);
 
   const loadBarangData = () => {
-    const savedBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
+    const savedBarang: Barang[] = JSON.parse(localStorage.getItem("barangList") || "[]");
     setBarangTersedia(savedBarang);
 
-    const savedKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
+    const savedKategori: string[] = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
     setKategoriList(savedKategori);
   };
 
@@ -41,22 +52,22 @@ const Transaksi = () => {
     const cocokKategori = selectedKategori ? barang.kategori === selectedKategori : true;
     const keyword = searchKeyword.toLowerCase();
     const cocokKeyword =
-    (barang.nama || "").toLowerCase().includes(keyword) ||
-    (String(barang.kode) || "").toLowerCase().includes(keyword);
+      (barang.nama || "").toLowerCase().includes(keyword) ||
+      (String(barang.kode) || "").toLowerCase().includes(keyword);
     return cocokKategori && cocokKeyword && barang.stok > 0;
   });
 
-  const tambahBarang = (barang: any) => {
+  const tambahBarang = (barang: Barang) => {
     setSelectedItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.kode === barang.kode);
 
       if (existingItem) {
-        if (existingItem.jumlah + 1 > barang.stok) {
+        if (existingItem.jumlah! + 1 > barang.stok) {
           alert("Jumlah pembelian melebihi stok yang tersedia!");
           return prevItems;
         }
         return prevItems.map((item) =>
-          item.kode === barang.kode ? { ...item, jumlah: item.jumlah + 1 } : item
+          item.kode === barang.kode ? { ...item, jumlah: item.jumlah! + 1 } : item
         );
       } else {
         if (barang.stok < 1) {
@@ -83,7 +94,7 @@ const Transaksi = () => {
     setSelectedItems((prevItems) =>
       prevItems.map((item) =>
         item.kode === kode
-          ? { ...item, jumlah: item.jumlah + 1 > item.stok ? item.stok : item.jumlah + 1 }
+          ? { ...item, jumlah: item.jumlah! + 1 > item.stok ? item.stok : item.jumlah! + 1 }
           : item
       )
     );
@@ -93,21 +104,9 @@ const Transaksi = () => {
     setSelectedItems((prevItems) =>
       prevItems
         .map((item) =>
-          item.kode === kode ? { ...item, jumlah: item.jumlah - 1 } : item
+          item.kode === kode ? { ...item, jumlah: item.jumlah! - 1 } : item
         )
-        .filter((item) => item.jumlah > 0)
-    );
-  };
-
-  const onUbahJumlah = (kode: string, jumlahBaru: number) => {
-    if (jumlahBaru < 1) jumlahBaru = 1;
-
-    setSelectedItems((prevItems) =>
-      prevItems.map((item) =>
-        item.kode === kode
-          ? { ...item, jumlah: jumlahBaru > item.stok ? item.stok : jumlahBaru }
-          : item
-      )
+        .filter((item) => item.jumlah! > 0)
     );
   };
 
@@ -118,7 +117,7 @@ const Transaksi = () => {
     router.push(`/transaksi/pembayaran?data=${encodedData}&total=${totalHarga}`);
   };
 
-  const totalHarga = selectedItems.reduce((total, item) => total + item.hargaJual * item.jumlah, 0);
+  const totalHarga = selectedItems.reduce((total, item) => total + item.hargaJual * item.jumlah!, 0);
 
   return (
     <MainLayout>
@@ -143,7 +142,7 @@ const Transaksi = () => {
               />
             </div>
 
-            {/* ✅ Kategori */}
+            {/* Kategori */}
             <div className="mb-4">
               <button
                 onClick={() => setShowAllKategori((prev) => !prev)}
@@ -184,12 +183,12 @@ const Transaksi = () => {
                   className="w-full text-left px-4 py-3 border border-gray-300 rounded-lg mb-2 hover:bg-gray-100 flex items-center"
                   onClick={() => tambahBarang(barang)}
                 >
-                  <Image 
-                  src={barang.gambar || "/icons/box.svg"} // ✅ Ganti ke barang.gambar jika ada
-                  alt={barang.nama}
-                  width={40}
-                  height={40}
-                  className="mr-3 rounded-md object-cover"
+                  <Image
+                    src={barang.gambar || "/icons/box.svg"} 
+                    alt={barang.nama}
+                    width={40}
+                    height={40}
+                    className="mr-3 rounded-md object-cover"
                   />
                   <div>
                     <span className="block font-semibold">{barang.nama}</span>
@@ -234,12 +233,10 @@ const Transaksi = () => {
                       }}
                       onBlur={() => {
                         if (item.jumlah < 1) {
-                          // Jika jumlah kosong atau nol → hapus item
                           setSelectedItems((prevItems) =>
                             prevItems.filter((i) => i.kode !== item.kode)
                           );
                         } else if (item.jumlah > item.stok) {
-                          // Batasi jumlah sesuai stok
                           setSelectedItems((prevItems) =>
                             prevItems.map((i) =>
                               i.kode === item.kode ? { ...i, jumlah: item.stok } : i
@@ -249,7 +246,7 @@ const Transaksi = () => {
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.currentTarget.blur(); // Trigger blur untuk validasi
+                          e.currentTarget.blur(); 
                         }
                       }}
                       className="bg-gray-200 px-4 py-2 rounded-lg text-xl font-bold w-16 text-center appearance-none"
@@ -267,15 +264,18 @@ const Transaksi = () => {
                 <FaBarcode className="mr-2" /> Scan Barcode
               </button>
               <span className="text-xl font-bold">{`Rp ${totalHarga.toLocaleString()}`}</span>
-              <button onClick={handleBayar} className="bg-blue-500 text-white px-6 py-2 rounded-lg">
+              <button
+                onClick={handleBayar}
+                className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg"
+              >
                 Bayar
               </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {isScannerOpen && <BarcodeScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />}
+        {isScannerOpen && <BarcodeScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />}
+      </div>
     </MainLayout>
   );
 };

@@ -1,4 +1,4 @@
 declare module "quagga" {
-    const Quagga: any;
-    export default Quagga;
-  }
+  const Quagga: unknown;
+  export default Quagga;
+}

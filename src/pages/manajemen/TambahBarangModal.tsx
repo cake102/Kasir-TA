@@ -1,6 +1,18 @@
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { FaTimes, FaCamera, FaSyncAlt, FaBarcode } from "react-icons/fa";
-import BarcodeScanner from "./BarcodeScanner"; // Import scanner
+import BarcodeScanner from "./BarcodeScanner";
+
+// Definisi tipe Barang
+interface Barang {
+  nama: string;
+  kode: string;
+  stok: number;
+  hargaDasar: number;
+  hargaJual: number;
+  kategori: string;
+  gambar: string | null;
+}
 
 const TambahBarangModal = ({
   isOpen,
@@ -9,17 +21,18 @@ const TambahBarangModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onBarangTambah: (barangBaru: any) => void;
+  onBarangTambah: (barangBaru: Barang) => void;
 }) => {
   const [kodeBarang, setKodeBarang] = useState("");
   const [namaBarang, setNamaBarang] = useState("");
-  const [stok, setStok] = useState(""); // 🔹 Ubah dari number ke string
-  const [hargaDasar, setHargaDasar] = useState(""); // 🔹 Ubah dari number ke string
-  const [hargaJual, setHargaJual] = useState(""); // 🔹 Ubah dari number ke string
+  const [stok, setStok] = useState("");
+  const [hargaDasar, setHargaDasar] = useState("");
+  const [hargaJual, setHargaJual] = useState("");
   const [kategori, setKategori] = useState("");
   const [kategoriList, setKategoriList] = useState<string[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [gambar, setGambar] = useState<string | null>(null)
+  const [gambar, setGambar] = useState<string | null>(null);
+
   const handleGambarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -30,6 +43,7 @@ const TambahBarangModal = ({
       reader.readAsDataURL(file);
     }
   };
+
   useEffect(() => {
     const savedKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
     setKategoriList(savedKategori);
@@ -54,7 +68,7 @@ const TambahBarangModal = ({
     e.preventDefault();
     if (!namaBarang.trim() || !kategori || !stok || !hargaDasar || !hargaJual) return;
 
-    const newBarang = {
+    const newBarang: Barang = {
       nama: namaBarang,
       kode: kodeBarang,
       stok: Number(stok),
@@ -63,13 +77,14 @@ const TambahBarangModal = ({
       kategori,
       gambar,
     };
+
     const existingBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
     const updatedBarang = [...existingBarang, newBarang];
-
     localStorage.setItem("barangList", JSON.stringify(updatedBarang));
+
     onBarangTambah(newBarang);
 
-    // Reset input
+    // Reset form
     setNamaBarang("");
     setKodeBarang("");
     setStok("");
@@ -92,21 +107,28 @@ const TambahBarangModal = ({
         <div className="flex flex-col items-center">
           <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
             {gambar ? (
-              <img src={gambar} alt="Preview" className="w-full h-full object-cover" />
+              <Image
+                src={gambar}
+                alt="Preview"
+                width={80}
+                height={80}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
             ) : (
-              <FaCamera className="text-gray-400 text-2xl" />          
+              <FaCamera className="text-gray-400 text-2xl" />
             )}
           </div>
           <input
-          type="file"
-          accept="image/*"
-          id="gambar-upload"
-          onChange={handleGambarChange}
-          hidden
+            type="file"
+            accept="image/*"
+            id="gambar-upload"
+            onChange={handleGambarChange}
+            hidden
           />
           <label
-          htmlFor="gambar-upload"
-          className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-lg test-sm cursor-pointer"
+            htmlFor="gambar-upload"
+            className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-lg text-sm cursor-pointer"
           >
             Ubah
           </label>

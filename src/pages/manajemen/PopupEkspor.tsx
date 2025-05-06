@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 
@@ -6,6 +6,11 @@ const PopupEkspor = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const [format, setFormat] = useState("PDF");
   const [showSuccess, setShowSuccess] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Pastikan komponen hanya dijalankan di client-side
+    if (typeof window === "undefined") return;
+  }, []);
 
   if (!isOpen) return null;
 
@@ -20,7 +25,7 @@ const PopupEkspor = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       doc.text("Laporan Stok Barang", 10, y);
       y += 10;
 
-      barangList.forEach((item: any, index: number) => {
+      barangList.forEach((item: { nama: string; kode: string; stok: number }, index: number) => {
         const line = `${index + 1}. ${item.nama} | Kode: ${item.kode} | Stok: ${item.stok}`;
         doc.text(line, 10, y);
         y += 10;
@@ -28,7 +33,7 @@ const PopupEkspor = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
       doc.save("stok-barang.pdf");
     } else if (format === "Excel") {
-      const filteredList = barangList.map((item: any) => ({
+      const filteredList = barangList.map((item: { nama: string; kode: string; kategori: string; stok: number; hargaJual: number; hargaDasar: number }) => ({
         nama: item.nama,
         kode: item.kode,
         kategori: item.kategori,
@@ -52,7 +57,7 @@ const PopupEkspor = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setImportError(null); // reset error jika ada
+    setImportError(null);
 
     if (!file) return;
 
@@ -62,7 +67,7 @@ const PopupEkspor = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       const workbook = XLSX.read(data, { type: "binary" });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const importedData = XLSX.utils.sheet_to_json<any>(sheet);
+      const importedData = XLSX.utils.sheet_to_json<{ nama: string; kode: string; kategori: string; stok: number; hargaJual: number; hargaDasar: number }>(sheet);
 
       // 🔍 Validasi format kolom wajib
       const isValid = importedData.every((item) =>

@@ -4,8 +4,20 @@ import { useState, useEffect } from "react";
 import PopupEkspor from "./PopupEkspor";
 import Image from "next/image";
 
+type Transaction = {
+  id: string;
+  waktuOrder: string;
+  waktuBayar: string;
+  outlet: string;
+  barangList: { nama: string; jumlah: number }[];
+  total: number;
+  metode: string;
+  tanggal: string;
+  bulan: string;
+};
+
 const Laporan = () => {
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<Transaction[]>([]);
   const [totalPenjualan, setTotalPenjualan] = useState(0);
   const [totalTransaksi, setTotalTransaksi] = useState(0);
   const [totalPembayaran, setTotalPembayaran] = useState(0);
@@ -26,14 +38,13 @@ const Laporan = () => {
 
   useEffect(() => {
     const transaksiDariStorage = localStorage.getItem("transaksi");
-    let parsedTransactions: any[] = [];
+    let parsedTransactions: Transaction[] = [];
 
-    if (transaksiDariStorage !== null) {
+    if (transaksiDariStorage) {
       try {
         parsedTransactions = JSON.parse(transaksiDariStorage);
       } catch (error) {
         console.error("Error parsing transactions:", error);
-        parsedTransactions = [];
       }
     }
 
@@ -46,7 +57,8 @@ const Laporan = () => {
       };
     });
 
-    let filteredBy;
+    let filteredBy: Transaction[] = [];
+
     if (showAll) {
       filteredBy = formattedTransactions;
     } else if (filterMode === "month" && selectedMonth) {
@@ -57,8 +69,7 @@ const Laporan = () => {
 
     setFilteredData(filteredBy);
 
-    setCurrentPage(1);
-
+    // Recalculate totals
     const totalSales = filteredBy.reduce((sum, trx) => sum + trx.total, 0);
     setTotalPenjualan(totalSales);
     setTotalTransaksi(filteredBy.length);
@@ -194,7 +205,7 @@ const Laporan = () => {
                     <td className="p-3">
                       {trx.barangList?.length > 0 ? (
                         <ul className="list-disc pl-4">
-                          {trx.barangList.map((barang: any, i: number) => (
+                          {trx.barangList.map((barang, i) => (
                             <li key={i}>
                               {barang.nama} x{barang.jumlah}
                             </li>

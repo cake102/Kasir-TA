@@ -1,11 +1,21 @@
-// src/pages/manajemen/EditStokModal.tsx
 import React, { useState, useEffect } from "react";
+import Image from "next/image";  // Import Image dari Next.js
+
+interface Barang {
+  nama: string;
+  kode: string;
+  kategori: string;
+  stok: number;
+  hargaJual: number;
+  hargaDasar: number;
+  gambar: string | null;
+}
 
 interface EditStokModalProps {
   isOpen: boolean;
   onClose: () => void;
-  barang: any; // Ganti dengan tipe yang sesuai jika ada
-  onSave: (updatedBarang: any) => void;
+  barang: Barang;  // Menggunakan tipe Barang
+  onSave: (updatedBarang: Barang) => void;  // Menggunakan tipe Barang
 }
 
 const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, onSave }) => {
@@ -17,8 +27,7 @@ const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, 
   const [hargaDasar, setHargaDasar] = useState(0);
   const [kategoriList, setKategoriList] = useState<string[]>([]);
 
-  const [gambar, setGambar] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);  // Gambar preview
 
   useEffect(() => {
     const savedKategori = JSON.parse(localStorage.getItem("kategoriBarang") || "[]");
@@ -33,16 +42,14 @@ const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, 
       setStok(barang.stok || 0);
       setHargaJual(barang.hargaJual || 0);
       setHargaDasar(barang.hargaDasar || 0);
-      setPreview(barang.gambar || null);
-      setGambar(null);
+      setPreview(barang.gambar || null);  // Set preview gambar dari barang
     }
   }, [barang]);
 
   const handleGambarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setGambar(file);
-      setPreview(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file));  // Menampilkan gambar yang dipilih
     }
   };
 
@@ -55,7 +62,7 @@ const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, 
       stok,
       hargaJual,
       hargaDasar,
-      gambar: preview,
+      gambar: preview,  // Menyimpan gambar yang dipilih (preview)
     };
     onSave(updatedBarang);
     onClose();
@@ -79,10 +86,12 @@ const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, 
           />
           {preview && (
             <div className="mt-2">
-              <img
+              <Image
                 src={preview}
                 alt="Preview"
-                className="w-32 h-32 object-cover rounded border"
+                width={128}  // Tentukan ukuran gambar
+                height={128}  // Tentukan ukuran gambar
+                className="object-cover rounded border"
               />
             </div>
           )}

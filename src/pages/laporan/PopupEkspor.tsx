@@ -2,12 +2,24 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 
-const PopupEkspor = ({
-  isOpen,
-  onClose,
-}: {
+// Definisikan tipe data untuk item dalam transaksi
+interface Transaksi {
+  waktuOrder: string;
+  metode: string;
+  total: number;
+}
+
+// Perbaiki tipe properti untuk PopupEkspor agar menerima 'onExport'
+interface PopupEksporProps {
   isOpen: boolean;
   onClose: () => void;
+  onExport: (format: string) => void; // Properti onExport ditambahkan
+}
+
+const PopupEkspor: React.FC<PopupEksporProps> = ({
+  isOpen,
+  onClose,
+  onExport, // Ambil props onExport
 }) => {
   const [format, setFormat] = useState("PDF");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -15,7 +27,7 @@ const PopupEkspor = ({
   if (!isOpen) return null;
 
   const handleExport = () => {
-    const transaksi = JSON.parse(localStorage.getItem("transaksi") || "[]");
+    const transaksi: Transaksi[] = JSON.parse(localStorage.getItem("transaksi") || "[]");
 
     if (!transaksi.length) {
       alert("Tidak ada data untuk diekspor.");
@@ -31,7 +43,7 @@ const PopupEkspor = ({
       y += 10;
       doc.setFontSize(10);
 
-      transaksi.forEach((item: any, index: number) => {
+      transaksi.forEach((item: Transaksi, index: number) => {
         const detail = `${index + 1}. ${item.waktuOrder} | Metode: ${item.metode} | Total: Rp${item.total}`;
         doc.text(detail, 10, y);
         y += 8;
@@ -49,6 +61,9 @@ const PopupEkspor = ({
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
       XLSX.writeFile(workbook, "laporan-transaksi.xlsx");
     }
+
+    // Memanggil onExport setelah ekspor selesai
+    onExport(format); // Sekarang onExport dipanggil
 
     setShowSuccess(true);
     setTimeout(() => {

@@ -2,16 +2,15 @@ import React, { useState } from "react";
 
 const PopupCash = ({ totalHarga, onClose, onSuccess }) => {
   const [inputPembayaran, setInputPembayaran] = useState("");
-  const [kembalian, setKembalian] = useState(null);
 
   const handleKonfirmasi = () => {
     const cashGiven = parseFloat(inputPembayaran) || 0;
     if (cashGiven < totalHarga) {
       alert("Uang yang diberikan kurang!");
     } else {
-      setKembalian(cashGiven - totalHarga);
+      const kembalian = cashGiven - totalHarga; // hitung langsung saat perlu
       setTimeout(() => {
-        onSuccess(cashGiven === totalHarga ? null : cashGiven - totalHarga);
+        onSuccess(cashGiven === totalHarga ? null : kembalian);
         onClose();
       }, 500);
     }

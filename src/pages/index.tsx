@@ -24,7 +24,7 @@ export default function Home() {
       } else {
         router.replace("/login");
       }
-    } catch (e) {
+    } catch (_) { // Mengganti `e` dengan `_` untuk menunjukkan parameter tidak digunakan
       router.replace("/login");
     }
   }, [router]);

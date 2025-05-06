@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { FaTimes } from "react-icons/fa";
 
@@ -9,14 +9,17 @@ interface BarcodeScannerProps {
 
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
-  const [html5QrCode, setHtml5QrCode] = useState<Html5Qrcode | null>(null);
   const [daftarKamera, setDaftarKamera] = useState<MediaDeviceInfo[]>([]);
   const [kameraTerpilih, setKameraTerpilih] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [isScanning, setIsScanning] = useState(true);
   const lastScannedCodeRef = useRef<string | null>(null);
-  const beepSound = new Audio("/beep.mp3");
+  const beepSound = useRef(new Audio("/beep.mp3")); // Gunakan useRef untuk beepSound
   const [scannedBarcode, setScannedBarcode] = useState("");
+
+  // Callback untuk onScan agar stabil
+  const stableOnScan = useCallback((barcode: string) => {
+    onScan(barcode);
+  }, [onScan]);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -29,7 +32,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           setKameraTerpilih(kameraVideo[0].deviceId);
         }
       })
-      .catch(() => setErrorMessage("Gagal mendapatkan daftar kamera. Coba berikan izin kamera."));
+      .catch(() => alert("Gagal mendapatkan daftar kamera. Coba berikan izin kamera."));
   }, []);
 
   useEffect(() => {
@@ -47,20 +50,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         },
         (decodedText) => {
           if (decodedText === lastScannedCodeRef.current) return;
-          beepSound.play().catch(console.error);
+          beepSound.current.play().catch(console.error); // Gunakan beepSound.ref
           lastScannedCodeRef.current = decodedText;
-          onScan(decodedText);
+          stableOnScan(decodedText); // Gunakan stableOnScan
           setScannedBarcode(decodedText);
           setTimeout(() => (lastScannedCodeRef.current = null), 2000);
         },
         () => {}
       )
-      .catch(() => setErrorMessage("Gagal memulai scanner. Coba ganti kamera."));
-
-    setHtml5QrCode(qrCodeScanner);
+      .catch(() => alert("Gagal memulai scanner. Coba ganti kamera."));
 
     return () => qrCodeScanner.stop().catch(console.error);
-  }, [kameraTerpilih, isScanning]);
+  }, [kameraTerpilih, isScanning, stableOnScan]);
 
   useEffect(() => {
     let barcodeBuffer = "";
@@ -77,8 +78,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         event.preventDefault();
         if (barcodeBuffer.length > 3) {
           barcodeBuffer = barcodeBuffer.trim();
-          beepSound.play().catch(console.error);
-          onScan(barcodeBuffer);
+          beepSound.current.play().catch(console.error);
+          stableOnScan(barcodeBuffer); // Gunakan stableOnScan
           setScannedBarcode(barcodeBuffer);
           barcodeBuffer = "";
         }
@@ -92,7 +93,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
 
     document.addEventListener("keydown", handleKeydown);
     return () => document.removeEventListener("keydown", handleKeydown);
-  }, [onScan]);
+  }, [stableOnScan]);
 
   // 🔧 Force style untuk video agar tidak overflow dan tampil penuh
   useEffect(() => {

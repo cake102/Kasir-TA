@@ -66,7 +66,17 @@ const TambahBarangModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!namaBarang.trim() || !kategori || !stok || !hargaDasar || !hargaJual) return;
+    if (!namaBarang.trim() || !kategori || !stok || !hargaDasar || !hargaJual || !kodeBarang.trim ()) {
+      alert("Semua kotak wajib diisi.");
+      return;
+    } 
+
+    const existingBarang: Barang[] = JSON.parse(localStorage.getItem("barangList") || "[]");
+    const isKodeSudahAda = existingBarang.some((barang) => barang.kode === kodeBarang);
+    if (isKodeSudahAda) {
+      alert("Kode barang sudah digunakan.");
+      return;
+    }
 
     const newBarang: Barang = {
       nama: namaBarang,
@@ -78,7 +88,6 @@ const TambahBarangModal = ({
       gambar,
     };
 
-    const existingBarang = JSON.parse(localStorage.getItem("barangList") || "[]");
     const updatedBarang = [...existingBarang, newBarang];
     localStorage.setItem("barangList", JSON.stringify(updatedBarang));
 

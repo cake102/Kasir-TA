@@ -1,6 +1,26 @@
 import React, { useEffect, useCallback } from "react";
 
-const PopupSukses = ({ kembalian, transaksi, onClose }) => {
+type Barang = {
+  kode: string;
+  nama: string;
+  hargaJual: number;
+  jumlah: number;
+};
+
+type Transaksi = {
+  barangList: Barang[];
+  total: number;
+  metode: string;
+  waktuBayar: string;
+};
+
+type PopupSuksesProps = {
+  kembalian: number | null;
+  transaksi: Transaksi;
+  onClose: () => void;
+};
+
+const PopupSukses = ({ kembalian, transaksi, onClose }: PopupSuksesProps) => {
   const handlePrint = useCallback(() => {
     if (transaksi && transaksi.barangList) {
       transaksi.barangList.forEach(item => {

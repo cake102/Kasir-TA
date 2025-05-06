@@ -283,7 +283,7 @@ const Pembayaran = () => {
         </div>
       </div>
 
-      {showPopupSukses && (
+      {showPopupSukses && lastTransaksi && (
         <PopupSukses
           kembalian={kembalian}
           transaksi={lastTransaksi}

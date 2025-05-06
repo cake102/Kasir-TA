@@ -14,7 +14,7 @@ interface Barang {
 interface EditStokModalProps {
   isOpen: boolean;
   onClose: () => void;
-  barang: Barang;  // Menggunakan tipe Barang
+  barang: Barang | null;  // Menggunakan tipe Barang
   onSave: (updatedBarang: Barang) => void;  // Menggunakan tipe Barang
 }
 
@@ -54,6 +54,7 @@ const EditStokModal: React.FC<EditStokModalProps> = ({ isOpen, onClose, barang, 
   };
 
   const handleSave = () => {
+    if (!barang) return;
     const updatedBarang = {
       ...barang,
       nama,

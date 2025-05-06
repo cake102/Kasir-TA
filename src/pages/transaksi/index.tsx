@@ -232,11 +232,11 @@ const Transaksi = () => {
                         }
                       }}
                       onBlur={() => {
-                        if (item.jumlah < 1) {
+                        if (item.jumlah != null && item.jumlah < 1) {
                           setSelectedItems((prevItems) =>
                             prevItems.filter((i) => i.kode !== item.kode)
                           );
-                        } else if (item.jumlah > item.stok) {
+                        } else if (item.jumlah != null && item.jumlah > item.stok) {
                           setSelectedItems((prevItems) =>
                             prevItems.map((i) =>
                               i.kode === item.kode ? { ...i, jumlah: item.stok } : i

@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { FaArrowLeft } from "react-icons/fa";
 import EditStokModal from "./EditStokModal";
 import PopupEkspor from "./PopupEkspor";
-import { Barang } from "../../types"; // ✅ Import tipe Barang
+import { Barang } from "../../type"; // ✅ Import tipe Barang
 
 const StokBarang = () => {
   const router = useRouter();
@@ -49,10 +49,6 @@ const StokBarang = () => {
 
   const handleOpenPopupEkspor = () => {
     setShowPopupEkspor(true);
-  };
-
-  const handleExport = (format: string) => {
-    console.log(`Mengekspor data dalam format: ${format}`);
   };
 
   return (
@@ -184,17 +180,17 @@ const StokBarang = () => {
         </div>
 
         {/* Modal dan Popup */}
+        [selectedBarang && (
         <EditStokModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           barang={selectedBarang}
           onSave={handleSave}
         />
-
+        )]
         <PopupEkspor
           isOpen={showPopupEkspor}
           onClose={() => setShowPopupEkspor(false)}
-          onExport={handleExport}
         />
       </div>
     </MainLayout>

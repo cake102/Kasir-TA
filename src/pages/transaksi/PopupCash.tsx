@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 
-const PopupCash = ({ totalHarga, onClose, onSuccess }) => {
+type PopupCashProps = {
+  totalHarga: number;
+  onClose: () => void;
+  onSuccess: (kembalian: number | null) => void;
+};
+
+const PopupCash = ({ totalHarga, onClose, onSuccess }: PopupCashProps) => {
   const [inputPembayaran, setInputPembayaran] = useState("");
 
   const handleKonfirmasi = () => {

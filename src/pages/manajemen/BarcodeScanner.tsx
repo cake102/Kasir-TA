@@ -13,7 +13,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [kameraTerpilih, setKameraTerpilih] = useState<string>("");
   const [isScanning, setIsScanning] = useState(true);
   const lastScannedCodeRef = useRef<string | null>(null);
-  const beepSound = useRef(new Audio("/beep.mp3"));
+  
+  // Pengecekan untuk memastikan Audio hanya digunakan di sisi klien
+  const beepSound = useRef<HTMLAudioElement | null>(null);
   const [scannedBarcode, setScannedBarcode] = useState("");
 
   const stableOnScan = useCallback((barcode: string) => {
@@ -55,7 +57,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         },
         (decodedText) => {
           if (decodedText === lastScannedCodeRef.current) return;
-          beepSound.current.play().catch(console.error);
+          
+          // Pastikan audio hanya dimainkan di sisi klien
+          if (typeof window !== "undefined") {
+            beepSound.current = new Audio("/beep.mp3")
+          }
+
           lastScannedCodeRef.current = decodedText;
           stableOnScan(decodedText);
           setScannedBarcode(decodedText);
@@ -88,7 +95,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         event.preventDefault();
         if (barcodeBuffer.length > 3) {
           barcodeBuffer = barcodeBuffer.trim();
-          beepSound.current.play().catch(console.error);
+          // Pastikan audio hanya dimainkan di sisi klien
+          if (typeof window !== "undefined" && beepSound.current) {
+            beepSound.current.play().catch(console.error);
+          }
+
           stableOnScan(barcodeBuffer);
           setScannedBarcode(barcodeBuffer);
           barcodeBuffer = "";

@@ -16,11 +16,11 @@ type Transaksi = {
 
 type PopupSuksesProps = {
   kembalian: number | null;
-  transaksi: Transaksi;
+  transaksi: Transaksi | null; // Ubah tipe transaksi menjadi bisa null
   onClose: () => void;
 };
 
-const PopupSukses = ({ kembalian, transaksi, onClose }: PopupSuksesProps) => {
+const PopupSukses = ({ kembalian, transaksi = { barangList: [], total: 0, metode: "", waktuBayar: "" }, onClose }: PopupSuksesProps) => {
   const handlePrint = useCallback(() => {
     if (transaksi && transaksi.barangList) {
       transaksi.barangList.forEach(item => {
@@ -93,6 +93,11 @@ const PopupSukses = ({ kembalian, transaksi, onClose }: PopupSuksesProps) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Jika transaksi belum ada (null), tampilkan loading atau placeholder
+  if (!transaksi) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity">
@@ -151,7 +156,7 @@ const PopupSukses = ({ kembalian, transaksi, onClose }: PopupSuksesProps) => {
           <div className="divider" />
           <div className="struk-item">
             <strong>Total</strong>
-            <strong>Rp {transaksi.total.toLocaleString()}</strong>
+            <strong>Rp {transaksi?.total?.toLocaleString() ?? 0}</strong>
           </div>
           <div className="struk-item">
             <span>Metode</span>

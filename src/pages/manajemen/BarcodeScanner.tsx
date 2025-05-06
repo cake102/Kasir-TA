@@ -13,10 +13,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [kameraTerpilih, setKameraTerpilih] = useState<string>("");
   const [isScanning, setIsScanning] = useState(true);
   const lastScannedCodeRef = useRef<string | null>(null);
-  const beepSound = useRef(new Audio("/beep.mp3")); // Gunakan useRef untuk beepSound
+  const beepSound = useRef(new Audio("/beep.mp3"));
   const [scannedBarcode, setScannedBarcode] = useState("");
 
-  // Callback untuk onScan agar stabil
   const stableOnScan = useCallback((barcode: string) => {
     onScan(barcode);
   }, [onScan]);
@@ -50,9 +49,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         },
         (decodedText) => {
           if (decodedText === lastScannedCodeRef.current) return;
-          beepSound.current.play().catch(console.error); // Gunakan beepSound.ref
+          beepSound.current.play().catch(console.error);
           lastScannedCodeRef.current = decodedText;
-          stableOnScan(decodedText); // Gunakan stableOnScan
+          stableOnScan(decodedText);
           setScannedBarcode(decodedText);
           setTimeout(() => (lastScannedCodeRef.current = null), 2000);
         },
@@ -60,7 +59,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       )
       .catch(() => alert("Gagal memulai scanner. Coba ganti kamera."));
 
-    return () => qrCodeScanner.stop().catch(console.error);
+    return () => {
+      qrCodeScanner.stop().then(() => {
+        console.log("Scanner stopped");
+      }).catch(console.error);
+    };
   }, [kameraTerpilih, isScanning, stableOnScan]);
 
   useEffect(() => {
@@ -79,7 +82,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         if (barcodeBuffer.length > 3) {
           barcodeBuffer = barcodeBuffer.trim();
           beepSound.current.play().catch(console.error);
-          stableOnScan(barcodeBuffer); // Gunakan stableOnScan
+          stableOnScan(barcodeBuffer);
           setScannedBarcode(barcodeBuffer);
           barcodeBuffer = "";
         }
@@ -95,7 +98,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     return () => document.removeEventListener("keydown", handleKeydown);
   }, [stableOnScan]);
 
-  // 🔧 Force style untuk video agar tidak overflow dan tampil penuh
   useEffect(() => {
     const interval = setInterval(() => {
       const video = scannerRef.current?.querySelector("video");
@@ -103,7 +105,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         video.style.width = "100%";
         video.style.height = "100%";
         video.style.objectFit = "cover";
-        video.style.borderRadius = "0.375rem"; // Sama dengan rounded-md
+        video.style.borderRadius = "0.375rem";
         clearInterval(interval);
       }
     }, 500);
@@ -129,7 +131,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           <h2 className="text-lg font-semibold mb-2 text-center">Pindai Barcode</h2>
           <p className="text-center text-sm">Gunakan scanner USB atau kamera</p>
 
-          {/* Pilihan Kamera */}
           <div className="mb-2">
             <label className="text-sm font-medium block">Pilih Kamera</label>
             <select
@@ -145,7 +146,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             </select>
           </div>
 
-          {/* Scanner Kamera */}
           <div
             id="scanner-container"
             ref={scannerRef}
@@ -159,7 +159,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             }}
           ></div>
 
-          {/* Hasil Scan */}
           {scannedBarcode && (
             <div className="mt-4 p-2 bg-green-100 border border-green-400 text-center font-bold text-green-600">
               {scannedBarcode}

@@ -59,11 +59,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       )
       .catch(() => alert("Gagal memulai scanner. Coba ganti kamera."));
 
-    return () => {
-      qrCodeScanner.stop().then(() => {
-        console.log("Scanner stopped");
-      }).catch(console.error);
-    };
+      return () => {
+        // Tidak boleh async, jadi kita jalankan promise-nya tanpa return
+        qrCodeScanner.stop()
+          .then(() => console.log("Scanner stopped"))
+          .catch(console.error);
+      };
   }, [kameraTerpilih, isScanning, stableOnScan]);
 
   useEffect(() => {
